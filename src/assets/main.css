@@ -47,3 +47,6 @@ a,
     padding: 0;
   }
 }
+a:hover {
+  background-color: transparent !important;
+}

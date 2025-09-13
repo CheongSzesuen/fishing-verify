@@ -97,33 +97,72 @@
             <div ref="contentRef" v-if="slots.default && slots.default()[currentStep - 1]">
               <component :is="slots.default()[currentStep - 1]" />
             </div>
+
+            <!-- 第三步的强制阅读提示 -->
+            <div
+              v-if="currentStep === 3 && showReadWarning"
+              class="mt-4 p-3 bg-red-900 border border-red-500 rounded-lg text-red-200 text-sm text-center animate-pulse"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-1">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              请仔细阅读这几句话！
+            </div>
           </Motion>
         </AnimatePresence>
       </Motion>
 
       <div v-if="!isCompleted" :class="`w-full ${footerClassName}`">
-  <div :class="`flex w-full ${currentStep !== 1 ? 'justify-between' : 'justify-end'}`">
-    <!-- Back Button -->
-    <button
-  v-if="currentStep !== 1"
-  @click="handleBack"
-  :disabled="backButtonProps?.disabled"
-  :class="backButtonClass"
-  v-bind="backButtonProps"
->
-  {{ backButtonText }}
-</button>
+        <div :class="`flex w-full ${currentStep !== 1 ? 'justify-between' : 'justify-end'}`">
+          <!-- Back Button -->
+          <button
+            v-if="currentStep !== 1"
+            @click="handleBack"
+            :disabled="backButtonProps?.disabled"
+            :class="backButtonClass"
+            v-bind="backButtonProps"
+          >
+            {{ backButtonText }}
+          </button>
 
-    <!-- Next/Complete Button -->
-    <button
-  @click="handleNextClick"
-  :disabled="nextButtonProps?.disabled"
-  :class="`border-none bg-[#1246A4] transition-all duration-[350ms] flex items-center justify-center rounded-full text-white font-medium tracking-tight px-5 py-2.5 cursor-pointer hover:bg-[#113671] disabled:opacity-50 disabled:cursor-not-allowed`"
->
-  {{ isLastStep ? 'Complete' : nextButtonText }}
-</button>
-  </div>
-</div>
+          <!-- Next/Complete Button -->
+          <button
+          v-if="!isLastStep"
+            @click="handleNextClick"
+           :disabled="currentStep === 3 && countdownSeconds > 0"
+            :class="[
+
+              'border-none',
+              'transition-all',
+              'duration-[350ms]',
+              'flex',
+              'items-center',
+              'justify-center',
+              'rounded-full',
+              'text-white',
+              'font-medium',
+              'tracking-tight',
+              'px-5',
+              'py-2.5',
+              'cursor-pointer',
+              'hover:bg-[#113671]',
+              'disabled:opacity-50',
+              'disabled:cursor-not-allowed',
+              currentStep === 3 && countdownSeconds > 0 ? 'bg-gray-500' : 'bg-[#1246A4]'
+            ]"
+          >
+            {{
+    isLastStep
+      ? 'Complete'
+      : currentStep === 3 && countdownSeconds > 0
+        ? `下一步 (${countdownSeconds}s)`
+        : nextButtonText
+  }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -191,43 +230,34 @@ const contentRef = useTemplateRef<HTMLDivElement>('contentRef');
 const stepsArray = computed(() => slots.default?.() || []);
 const totalSteps = computed(() => stepsArray.value.length);
 const isLastStep = computed(() => currentStep.value === totalSteps.value);
+
+// 倒计时相关
+const countdownSeconds = ref(8);
+const countdownTimer = ref<number | null>(null);
+const showReadWarning = ref(false); // 显示“请仔细阅读”提示
+
 const backButtonClass = computed(() => {
   return [
     'border-none',
-    'bg-[#A3DDFB]',
+    'bg-[#444C6C]',
     'transition-all',
     'duration-[350ms]',
     'flex',
     'items-center',
     'justify-center',
-    'rounded-lg',
+    'rounded-full',
     'text-black',
     'font-medium',
     'px-5',
     'py-2.5',
     'cursor-pointer',
-    'hover:bg-[#93B8F8]',
+    'hover:bg-[#113671]',
     'disabled:opacity-50',
     'disabled:cursor-not-allowed',
     currentStep.value === 1 ? 'opacity-50' : '',
     currentStep.value === 1 ? 'cursor-not-allowed' : ''
   ].filter(Boolean).join(' ');
 });
-// 新增的处理下一步点击的函数
-const handleNextClick = () => {
-  // 调用验证函数，如果验证通过则继续
-  if (props.onNextStep && !props.onNextStep(currentStep.value)) {
-    // 验证未通过，不执行下一步
-    return;
-  }
-  
-  // 验证通过，执行下一步
-  if (isLastStep.value) {
-    handleComplete();
-  } else {
-    handleNext();
-  }
-};
 
 const getStepStatus = (step: number) => {
   if (isCompleted.value || currentStep.value > step) return 'complete';
@@ -294,6 +324,48 @@ const handleBack = () => {
   updateStep(currentStep.value - 1);
 };
 
+const handleNextClick = () => {
+  // 如果是第3步，执行特殊逻辑
+  if (currentStep.value === 3) {
+    // 如果还在倒计时中，说明用户提前点击了
+    if (countdownSeconds.value > 0) {
+      if (countdownSeconds.value <= 2) {
+        // 在最后2秒内点击 → 显示警告
+        showReadWarning.value = true;
+        setTimeout(() => {
+          showReadWarning.value = false;
+        }, 3000);
+        return; // 阻止下一步
+      } else {
+        // 还没到2秒，但用户点了 → 不做任何事，不触发警告，只是阻止
+        return;
+      }
+    }
+
+    // 倒计时结束，正常继续
+    if (props.onNextStep && !props.onNextStep(currentStep.value)) {
+      return;
+    }
+    if (isLastStep.value) {
+      handleComplete();
+    } else {
+      handleNext();
+    }
+    return;
+  }
+
+  // 其他步骤：走正常流程
+  if (props.onNextStep && !props.onNextStep(currentStep.value)) {
+    return;
+  }
+
+  if (isLastStep.value) {
+    handleComplete();
+  } else {
+    handleNext();
+  }
+};
+
 const handleNext = () => {
   direction.value = 1;
   updateStep(currentStep.value + 1);
@@ -306,6 +378,27 @@ const handleComplete = () => {
 
 watch(currentStep, (newStep, oldStep) => {
   props.onStepChange?.(newStep);
+
+  // 清除旧的倒计时
+  if (countdownTimer.value) {
+    clearInterval(countdownTimer.value);
+    countdownTimer.value = null;
+    countdownSeconds.value = 10;
+    showReadWarning.value = false;
+  }
+
+  if (newStep === 3) {
+    // 启动10秒倒计时
+    countdownSeconds.value = 8;
+    countdownTimer.value = window.setInterval(() => {
+      countdownSeconds.value--;
+      if (countdownSeconds.value <= 0) {
+        clearInterval(countdownTimer.value!);
+        countdownTimer.value = null;
+      }
+    }, 1000);
+  }
+
   if (newStep !== oldStep && !isCompleted.value) {
     nextTick(measureHeight);
   } else if (!props.lockOnComplete && isCompleted.value) {
@@ -326,5 +419,13 @@ onMounted(() => {
 /* 确保所有文本默认为白色 */
 div, span, button {
   color: white;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.animate-pulse {
+  animation: pulse 1.5s infinite;
 }
 </style>
