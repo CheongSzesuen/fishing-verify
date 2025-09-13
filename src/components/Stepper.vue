@@ -102,25 +102,28 @@
       </Motion>
 
       <div v-if="!isCompleted" :class="`w-full ${footerClassName}`">
-        <div :class="`flex w-full ${currentStep !== 1 ? 'justify-between' : 'justify-end'}`">
-          <button
-            v-if="currentStep !== 1"
-            @click="handleBack"
-            :disabled="backButtonProps?.disabled"
-            :class="`text-zinc-400 bg-transparent cursor-pointer transition-all duration-[350ms] rounded px-2 py-1 border-none hover:text-white ${currentStep === 1 ? 'opacity-50 cursor-not-allowed' : ''}`"
-            v-bind="backButtonProps"
-          >
-            {{ backButtonText }}
-          </button>
-          <button
-            @click="handleNextClick"
-            :disabled="nextButtonProps?.disabled"
-            :class="`border-none bg-[#1246A4] transition-all duration-[350ms] flex items-center justify-center rounded-full text-white font-medium tracking-tight px-3.5 py-1.5 cursor-pointer hover:bg-[#113671] disabled:opacity-50 disabled:cursor-not-allowed`"
-          >
-            {{ isLastStep ? 'Complete' : nextButtonText }}
-          </button>
-        </div>
-      </div>
+  <div :class="`flex w-full ${currentStep !== 1 ? 'justify-between' : 'justify-end'}`">
+    <!-- Back Button -->
+    <button
+  v-if="currentStep !== 1"
+  @click="handleBack"
+  :disabled="backButtonProps?.disabled"
+  :class="backButtonClass"
+  v-bind="backButtonProps"
+>
+  {{ backButtonText }}
+</button>
+
+    <!-- Next/Complete Button -->
+    <button
+  @click="handleNextClick"
+  :disabled="nextButtonProps?.disabled"
+  :class="`border-none bg-[#1246A4] transition-all duration-[350ms] flex items-center justify-center rounded-full text-white font-medium tracking-tight px-5 py-2.5 cursor-pointer hover:bg-[#113671] disabled:opacity-50 disabled:cursor-not-allowed`"
+>
+  {{ isLastStep ? 'Complete' : nextButtonText }}
+</button>
+  </div>
+</div>
     </div>
   </div>
 </template>
@@ -171,9 +174,9 @@ const props = withDefaults(defineProps<StepperProps>(), {
   nextButtonProps: () => ({}),
   backButtonText: 'Back',
   nextButtonText: 'Continue',
-  disableStepIndicators: false,
+  disableStepIndicators: true,
   renderStepIndicator: undefined,
-  lockOnComplete: true,
+  lockOnComplete: false,
   onNextStep: () => true // 默认验证通过
 });
 
@@ -188,7 +191,28 @@ const contentRef = useTemplateRef<HTMLDivElement>('contentRef');
 const stepsArray = computed(() => slots.default?.() || []);
 const totalSteps = computed(() => stepsArray.value.length);
 const isLastStep = computed(() => currentStep.value === totalSteps.value);
-
+const backButtonClass = computed(() => {
+  return [
+    'border-none',
+    'bg-[#A3DDFB]',
+    'transition-all',
+    'duration-[350ms]',
+    'flex',
+    'items-center',
+    'justify-center',
+    'rounded-lg',
+    'text-black',
+    'font-medium',
+    'px-5',
+    'py-2.5',
+    'cursor-pointer',
+    'hover:bg-[#93B8F8]',
+    'disabled:opacity-50',
+    'disabled:cursor-not-allowed',
+    currentStep.value === 1 ? 'opacity-50' : '',
+    currentStep.value === 1 ? 'cursor-not-allowed' : ''
+  ].filter(Boolean).join(' ');
+});
 // 新增的处理下一步点击的函数
 const handleNextClick = () => {
   // 调用验证函数，如果验证通过则继续
