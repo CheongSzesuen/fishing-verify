@@ -24,7 +24,7 @@
               fill="none"
               stroke="currentColor"
               :stroke-width="2"
-              viewBox="0 0 24 24"
+              viewBox="0  0 24 24"
             >
               <Motion
                 as="path"
@@ -61,7 +61,7 @@
               :initial="{ width: 0, backgroundColor: '#52525b' }"
               :animate="
                 currentStep > index + 1
-                  ? { width: '100%', backgroundColor: '#27ff64' }
+                  ? { width: '100%', backgroundColor: '#1246A4' }
                   : { width: 0, backgroundColor: '#52525b' }
               "
               :transition="{ type: 'spring', stiffness: 100, damping: 15, duration: 0.4 }"
@@ -113,9 +113,9 @@
             {{ backButtonText }}
           </button>
           <button
-            @click="isLastStep ? handleComplete() : handleNext()"
+            @click="handleNextClick"
             :disabled="nextButtonProps?.disabled"
-            :class="`border-none bg-[#27ff64] transition-all duration-[350ms] flex items-center justify-center rounded-full text-black font-medium tracking-tight px-3.5 py-1.5 cursor-pointer hover:bg-[#22e55c] disabled:opacity-50 disabled:cursor-not-allowed`"
+            :class="`border-none bg-[#1246A4] transition-all duration-[350ms] flex items-center justify-center rounded-full text-white font-medium tracking-tight px-3.5 py-1.5 cursor-pointer hover:bg-[#113671] disabled:opacity-50 disabled:cursor-not-allowed`"
           >
             {{ isLastStep ? 'Complete' : nextButtonText }}
           </button>
@@ -156,6 +156,7 @@ interface StepperProps {
   disableStepIndicators?: boolean;
   renderStepIndicator?: Component;
   lockOnComplete?: boolean;
+  onNextStep?: (currentStep: number) => boolean; // 添加验证函数
 }
 
 const props = withDefaults(defineProps<StepperProps>(), {
@@ -172,7 +173,8 @@ const props = withDefaults(defineProps<StepperProps>(), {
   nextButtonText: 'Continue',
   disableStepIndicators: false,
   renderStepIndicator: undefined,
-  lockOnComplete: true
+  lockOnComplete: true,
+  onNextStep: () => true // 默认验证通过
 });
 
 const slots = useSlots();
@@ -187,6 +189,22 @@ const stepsArray = computed(() => slots.default?.() || []);
 const totalSteps = computed(() => stepsArray.value.length);
 const isLastStep = computed(() => currentStep.value === totalSteps.value);
 
+// 新增的处理下一步点击的函数
+const handleNextClick = () => {
+  // 调用验证函数，如果验证通过则继续
+  if (props.onNextStep && !props.onNextStep(currentStep.value)) {
+    // 验证未通过，不执行下一步
+    return;
+  }
+  
+  // 验证通过，执行下一步
+  if (isLastStep.value) {
+    handleComplete();
+  } else {
+    handleNext();
+  }
+};
+
 const getStepStatus = (step: number) => {
   if (isCompleted.value || currentStep.value > step) return 'complete';
   if (currentStep.value === step) return 'active';
@@ -198,7 +216,7 @@ const getStepIndicatorStyle = (step: number) => {
   switch (status) {
     case 'active':
     case 'complete':
-      return { backgroundColor: '#27FF64', color: '#fff' };
+      return { backgroundColor: '#1246A4', color: '#fff' };
     default:
       return { backgroundColor: '#222', color: '#a3a3a3' };
   }
