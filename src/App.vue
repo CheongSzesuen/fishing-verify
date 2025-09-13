@@ -2,17 +2,11 @@
   <div class="app-container">
     <!-- 全屏背景 -->
     <div class="fixed inset-0 -z-10 overflow-hidden bg-black">
-      <MagnetLines 
-        full-screen
-        fixed-mode
-        responsive
-        :rows="17"
-        :columns="25"
-        line-color="#cccccc"
-        :base-angle="20"
-        :cell-size="70"
-        line-width="0.25vmin"
-        line-height="5.5vmin"
+      <DotGrid
+        :dot-size="4"
+        :gap="25"
+        base-color="#1a1a1a"
+        class-name="w-full h-full"
       />
     </div>
     
@@ -23,36 +17,41 @@
           :initial-step="1"
           :on-step-change="handleStepChange"
           :on-final-step-completed="handleFinalStepCompleted"
-          back-button-text="Previous"
-          next-button-text="Next"
+          back-button-text="上一步"
+          next-button-text="下一步"
         >
           <div class="step-content">
-            <h2>Welcome to the Vue Bits stepper!</h2>
-            <p>Check out the next step!</p>
-          </div>
-
-          <div class="step-content">
-            <h2>Step 2</h2>
-            <img
-              class="step-image"
-              src="https://example.com/image.jpg"
-              alt="Example"
-            />
-            <p>Custom step content!</p>
-          </div>
-
-          <div class="step-content">
-            <h2>How about an input?</h2>
+            <h2>输入卡密</h2>
+            <p>购买后会自动返回一个12位的卡密</p>
             <input
               v-model="name"
               class="step-input"
-              placeholder="Your name?"
+              placeholder="A1B2C3D4E5F6"
+            />
+          </div>
+<div class="step-content">
+            <h2>输入设备ID</h2>
+            <p>手环上的二维码扫描出来的数据</p>
+            <input
+              v-model="name"
+              class="step-input"
+              placeholder="32位的16进制数据"
+            />
+          </div>
+
+
+          <div class="step-content">
+            <h2>你的激活数据</h2>
+            <p>复制数据后前往AstroBox使用插件激活</p>
+            <input
+              v-model="name"
+              class="step-input"
             />
           </div>
 
           <div class="step-content">
-            <h2>Final Step</h2>
-            <p>You made it!</p>
+            <h2>老乡！欢迎来钓鱼</h2>
+            <p>你可以加Q群，群号在自动回复里</p>
           </div>
         </Stepper>
       </div>
@@ -62,7 +61,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import MagnetLines from './components/MagnetLines.vue';
+import DotGrid from './components/DotGrid.vue';
 import Stepper from './components/Stepper.vue';
 
 const name = ref('');
